@@ -101,11 +101,9 @@ Dictionary<string, List<Dictionary<string, object>>> GetExpiredOrWillExpireTrain
 {
     var data = new Dictionary<string, List<Dictionary<string, object>>>();
     var specifiedDate = new DateTime(2023, 10, 1);
-    var oneMonthLater = specifiedDate.AddMonths(1);
 
     foreach (var person in persons)
     {
-        var personTrainings = new List<Dictionary<string, object>>();
         var completedTrainings = new Dictionary<string, Dictionary<string, string>>();
 
         foreach (var completion in person.completions.OrderByDescending(c =>
@@ -119,26 +117,21 @@ Dictionary<string, List<Dictionary<string, object>>> GetExpiredOrWillExpireTrain
                 continue;
             }
 
-            if (completionDate > specifiedDate.AddMonths(-1) && completionDate <= specifiedDate)
+            if (expirationDate > completionDate && expirationDate < specifiedDate)
             {
                 completedTrainings[completion.name] = new Dictionary<string, string>
                     { { "expiredOrWillExpire", "expired" } };
             }
-            else if (expirationDate > specifiedDate && expirationDate <= oneMonthLater)
+            else if (expirationDate > completionDate && expirationDate >= specifiedDate &&
+                     expirationDate <= specifiedDate.AddMonths(1))
             {
                 completedTrainings[completion.name] = new Dictionary<string, string>
                     { { "expiredOrWillExpire", "expires soon" } };
             }
         }
 
-        foreach (var trainingEntry in completedTrainings)
-        {
-            var trainingDict = new Dictionary<string, object>
-            {
-                { trainingEntry.Key, trainingEntry.Value }
-            };
-            personTrainings.Add(trainingDict);
-        }
+        var personTrainings = completedTrainings.Select(trainingEntry => new Dictionary<string, object>
+            { { trainingEntry.Key, trainingEntry.Value } }).ToList();
 
         if (personTrainings.Count > 0)
         {
